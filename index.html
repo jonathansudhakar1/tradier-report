@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNL Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/extras/jquery.tablesorter.pager.min.js"></script> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/css/theme.blue.min.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/css/jquery.tablesorter.pager.min.css"> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://kit.fontawesome.com/c231145a34.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">Tradier Performance</h1>
+            <hr>
+            <h2>Daily PnL</h2>
+              <canvas id="pnlChart"></canvas> 
+            <h2>Cumalitive PnL</h2>
+              <canvas id="cumulativePnlChart"></canvas> 
+            <h2>Symbol PnL</h2>
+              <canvas id="symbolPnlChart"></canvas> 
+        </div>
+    </section>
+    <hr>
+    <section class="section">
+        <div class="container">
+            <h2 class="title">Trades</h2>
+            <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth" id="pnl-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Symbol</th>
+                        <th>PnL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+            <div id="pagination-container">
+
+            </div>
+            <!-- pager -->
+            <div id="pager" class="pager">
+                <form>
+                    <i class="fa-solid fa-backward first"></i>
+                    <i class="fa-solid fa-backward-step prev"></i>
+                    <!-- the "pagedisplay" can be any element, including an input -->
+                    <span class="pagedisplay" data-pager-output-filtered="{startRow:input} &ndash; {endRow} / {filteredRows} of {totalRows} total rows"></span>
+                    <i class="fa-solid fa-forward-step next"></i>
+                    <i class="fa-solid fa-forward last"></i>
+                    <select class="pagesize">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="40">40</option>
+                    <option value="all">All Rows</option>
+                    </select>
+                </form>
+            </div>
+
+        </div>
+    </section>
+    <script>
+        fetch('pnl_data.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error fetching PNL data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data)
+
+                const dailyPnl = aggregateData(data);
+                const pnlBySymbol = aggregateBySymbol(data); // Aggregate for new chart
+
+                renderHistogram(dailyPnl); 
+                renderCumulativeLineGraph(dailyPnl);
+                renderSymbolPnlBarChart(pnlBySymbol); 
+                displayTableRows(data); // Initial display
+
+                setTimeout(() => {
+                    $("#pnl-table").tablesorter({
+                        theme: 'blue',
+                        widthFixed: true,
+                        widgets: ['zebra', 'pager'], // Example widget
+                    }).tablesorterPager({ 
+                        container: $(".pager"),
+                        size: 25 // Items per page
+                    });
+                }, 100); // 100 milliseconds delay
+            })
+            .catch(error => {
+                console.error('Error:', error); 
+                // Display an error message to the user here
+            });
+        
+        function aggregateData(data) {
+            const dailyPnl = {};
+            data.forEach(item => {
+                if (dailyPnl[item.date]) {
+                    dailyPnl[item.date] += item.pnl;
+                } else {
+                    dailyPnl[item.date] = item.pnl;
+                }
+            });
+            return dailyPnl;
+        }
+
+        function aggregateBySymbol(data) {
+            const pnlBySymbol = {};
+            data.forEach(item => {
+                if (pnlBySymbol[item.symbol]) {
+                    pnlBySymbol[item.symbol] += item.pnl;
+                } else {
+                    pnlBySymbol[item.symbol] = item.pnl;
+                }
+            });
+           // Convert to array of [symbol, pnl] pairs for sorting
+            const pnlEntries = Object.entries(pnlBySymbol);
+
+            // Sort by PNL (second element of each pair) in descending order
+            pnlEntries.sort((a, b) => b[1] - a[1]); 
+
+            return pnlEntries; // Return a sorted array
+        }
+
+        function renderHistogram(dailyPnl) {
+            const ctx = document.getElementById('pnlChart').getContext('2d');
+            const labels = Object.keys(dailyPnl);
+            const values = Object.values(dailyPnl);
+            const colors = values.map(value => value > 0 ? 'green' : 'red');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Daily PNL',
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: 'black', // Consistent border
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderCumulativeLineGraph(dailyPnl) {
+            const ctx = document.getElementById('cumulativePnlChart').getContext('2d');
+            const labels = Object.keys(dailyPnl);
+            const values = Object.values(dailyPnl);
+            let cumulativeSum = 0;
+            const cumulativeData = values.map(value => {
+                cumulativeSum += value;
+                return cumulativeSum;
+            });
+
+            const colors = cumulativeData.map(value => value > 0 ? 'green' : 'red');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Cumulative PNL',
+                        data: cumulativeData,
+                        borderColor: colors,
+                        borderWidth: 2
+                    }]
+                }
+            });
+        }
+
+
+        function renderSymbolPnlBarChart(pnlBySymbol) {
+            const ctx = document.getElementById('symbolPnlChart').getContext('2d');
+            const labels = pnlBySymbol.map(item => item[0]);  // item[0] is the symbol
+                const values = pnlBySymbol.map(item => item[1]);  // item[1] is the pnl
+            const colors = values.map(value => value > 0 ? 'green' : 'red');
+
+            new Chart(ctx, {
+                type: 'bar', 
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total PNL per Symbol', 
+                        data: values,
+                        backgroundColor: colors
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Makes it horizontal
+                }
+            });
+        }
+
+
+        function displayTableRows(displayData) {
+            const tableBody = document.getElementById('pnl-table').querySelector('tbody');
+            tableBody.innerHTML = ''; 
+
+            displayData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.symbol}</td>
+                    <td>${item.pnl}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
