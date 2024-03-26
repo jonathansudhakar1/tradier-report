@@ -1,5 +1,7 @@
 # Basic Tradier Daily Report
 
+[Report](https://jonathansudhakar1.github.io/tradier-report)
+
 ### Setup env
 Update `.env` to 
 TRADIER_ACCOUNT_ID=YOUR_ACCOUNT_ID
