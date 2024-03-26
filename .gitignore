@@ -1,2 +1,5 @@
 .env
 .venv
+log.txt
+
+0 6 * * *  cd /Users/jonathansudhakar/projects/tradier-report && ./update_and_push.sh >> ./log.txt 2>&1 

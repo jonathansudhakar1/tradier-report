@@ -11,6 +11,7 @@ load_dotenv()
 json_file = "pnl_data.json"
 
 def get_daily_pnl_by_symbol(account_id, token, date_str):
+    print(f"Getting data for date {date_str}")
     """
     Gets daily gain/loss aggregated by symbol from the Tradier API. Handles option symbols.
 
@@ -68,6 +69,7 @@ def get_daily_pnl_by_symbol(account_id, token, date_str):
     return list(results.values()) 
 
 def overwrite_json(account_id, token, start_date, end_date):
+    print("Running Overwrite")
     """Overwrites the JSON file with data from start_date to end_date."""
     data = []
     current_date = start_date
@@ -81,6 +83,7 @@ def overwrite_json(account_id, token, start_date, end_date):
 
 def update_json(account_id, token, start_date, end_date):
     """Updates the JSON file with data from start_date to end_date."""
+    print("Running Update")
     try:
         with open(json_file, 'r') as infile:
             existing_data = json.load(infile)
