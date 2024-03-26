@@ -1,11 +1,15 @@
 # Basic Tradier Daily Report
 
-[Report](https://jonathansudhakar1.github.io/tradier-report)
+[Report] (https://jonathansudhakar1.github.io/tradier-report)
 
 ### Setup env
-Update `.env` to 
+Update `.env` to:
+
 TRADIER_ACCOUNT_ID=YOUR_ACCOUNT_ID
+
 TRADIER_API_TOKEN=YOUR_API_TOKEN
+
+
 
 ### Setup cron
 ```
