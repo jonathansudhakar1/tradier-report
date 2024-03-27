@@ -82,7 +82,7 @@
                 renderHistogram(dailyPnl); 
                 renderCumulativeLineGraph(dailyPnl);
                 renderSymbolPnlBarChart(pnlBySymbol); 
-                displayTableRows(data); // Initial display
+                displayTableRows(data.reverse()); // Initial display
 
                 setTimeout(() => {
                     $("#pnl-table").tablesorter({
